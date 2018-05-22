@@ -1,0 +1,55 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: app1
+    namespace: discover
+spec:
+    selector:
+        matchLabels:
+            app: app1
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: app1
+        spec:
+            containers:
+              - name: app1
+                image: tak2siva/k8s_app1
+                ports:
+                  - name: http
+                    containerPort: 4567
+                  - name: grpc
+                    containerPort: 50051
+              - name: envoy
+                image: tak2siva/k8s_front_envoy
+                ports:
+                  - name: http
+                    containerPort: 80
+                volumeMounts:
+                  - name: config-volume
+                    mountPath: /etc/my-config/
+                command: ["/usr/local/bin/envoy"]
+                args: ["-c", "/etc/my-config/envoy.json", "--service-cluster", "app1-sidecar", "--v2-config-only", "-l", "trace"]
+            volumes:
+              - name: config-volume
+                configMap:
+                  name: app1-sidecar-config
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: app1
+  namespace: discover
+spec:
+  selector:
+    app: app1
+  ports:
+  - protocol: TCP
+    port: 80
+    name: http
+    nodePort: 30005
+  - port: 4567
+    name: debug
+    nodePort: 30003
+  type: NodePort

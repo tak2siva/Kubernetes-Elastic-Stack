@@ -1,0 +1,18 @@
+  filebeat.yml: |-
+      # filebeat.config:
+      #   prospectors:
+      #     path: /usr/share/filebeat/prospectors.d/*.yml
+      filebeat.autodiscover:
+        providers:
+          - type: kubernetes
+            templates:
+              - condition.equals:
+                  kubernetes.namespace: discover
+                config:
+                  - type: docker
+                    containers.ids:
+                      - "${data.kubernetes.container.id}"
+
+      logging.metrics.enabled: false
+      output.logstash:
+        hosts: ["logstash.monit:5044"]

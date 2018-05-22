@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: logstash
+    namespace: monit
+spec:
+    selector:
+        matchLabels:
+            app: logstash
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: logstash
+        spec:
+            containers:
+              - name: logstash
+                image: docker.elastic.co/logstash/logstash-oss:6.2.3
+                ports:
+                  - name: beats
+                    containerPort: 5044
+                volumeMounts:
+                  - name: config-volume
+                    mountPath: /usr/share/logstash/config/
+                volumeMounts:
+                  - name: pipeline-volume
+                    mountPath: /usr/share/logstash/pipeline/
+            volumes:
+              - name: config-volume
+                configMap:
+                  name: logstash-config
+              - name: pipeline-volume
+                configMap:
+                  name: pipeline-config
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: logstash
+  namespace: monit
+spec:
+  selector:
+    app: logstash
+  ports:
+  - protocol: TCP
+    port: 5044
+    name: beats
